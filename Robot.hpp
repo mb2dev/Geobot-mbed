@@ -6,8 +6,8 @@
 #define ROBOT_H
 
 #define FULL_SPEED 1.0f
-#define MID_SPEED 0.6f
-#define LOW_SPEED 0.2f
+#define MID_SPEED 0.8f
+#define LOW_SPEED 0.5f
 
 class Robot
 {
@@ -15,7 +15,7 @@ class Robot
         ObstacleDetector ol;
         Wheel* leftWheel;
         Wheel* rightWheel;
-    public:   
+    public:
         Robot(Wheel* wl, Wheel* wr) : leftWheel(wl), rightWheel(wr) {};
         void forward(float speed = MID_SPEED){
             leftWheel->forward(speed);
@@ -36,7 +36,7 @@ class Robot
         void brake(){
             leftWheel->brake();
             rightWheel->brake();
-        } 
+        }
         void automove(){
             if(ol.obstacle_center()){
                 backward();
@@ -47,7 +47,7 @@ class Robot
             }else{
                 forward();
             }
-        }   
+        }
 };
 
 #endif

@@ -3,10 +3,9 @@
 #include "Wheel.h"
 #include "Robot.hpp"
 
-#define FULL_SPEED 1.0f
-#define MID_SPEED 0.6f
-#define LOW_SPEED 0.2f
-#define SERVO_INCREMENT 0.01f
+#define SERVO_INCREMENT 0.02f
+#define LOW 0
+#define HIGH 1
 
 Servo myservo(D15);
 Servo myservo2(D14);
@@ -20,6 +19,13 @@ char *msg[] = {"STOP", "MOVE_FORWARD", "MOVE_BACKWARD", "MOVE_LEFT", "MOVE_RIGHT
 char *camControl[] =  {"MOVECAM_STOP","MOVECAM_UP", "MOVECAM_DOWN","MOVECAM_LEFT","MOVECAM_RIGHT"};
 int cmd=0;
 int cptB = 0;
+struct od_states {
+    int left;
+    int right;
+    int center;
+};
+struct od_states odstates = {LOW,LOW,LOW};
+struct od_states odprev = {HIGH,HIGH,HIGH};
 
 Wheel* rightWheel = new Wheel(D11,D10, 1);
 Wheel* leftWheel = new Wheel(D3,D2,1);
@@ -60,11 +66,11 @@ int main(void)
 {
     init();
     while(1) {
-        
+
         readSerial();
-        
+
         /******************* control robot *******************/
-        
+
         if(strcmp(msg[0], command) == 0){
             led1 = 1;
             geobot->brake();
@@ -85,14 +91,14 @@ int main(void)
         else if(strcmp(msg[5], command) == 0){
             geobot->automove();
         }
-        
+
         /******************* control cam *******************/
         if(strcmp(camControl[0], command) == 0){
             // MOVECAM STOP
             //memset(command, 0, sizeof command);
             continue;
         }
-        
+
         if(strcmp(camControl[1], command) == 0){
             // UP
             myservo2 = myservo2 - SERVO_INCREMENT;
@@ -116,6 +122,55 @@ int main(void)
             myservo = myservo - SERVO_INCREMENT;
             wait(0.1);
         }
+
+
+        //////// SENDS DATA ///////
+
+        char* msg;
+        int i, len;
+        odstates.right = geobot->ol.obstacle_right() ? HIGH : LOW;
+        odstates.center = geobot->ol.obstacle_center() ? HIGH : LOW;
+        odstates.left = geobot->ol.obstacle_left() ? HIGH : LOW;
+
+        if(odstates.right != odprev.right){
+            if(odstates.right){
+                msg = "$OBSTACLE_RIGHT=1^";
+            }else{
+                msg = "$OBSTACLE_RIGHT=0^";
+            }
+            len = strlen(msg);
+            for(i = 0; i < len; i++){
+                pc.putc(msg[i]);
+            }
+        }
+
+        if(odstates.center != odprev.center){
+            if(odstates.center){
+                msg = "$OBSTACLE_CENTER=1^";
+            }else{
+                msg = "$OBSTACLE_CENTER=0^";
+            }
+            len = strlen(msg);
+            for(i = 0; i < len; i++){
+                pc.putc(msg[i]);
+            }
+        }
+
+        if(odstates.left != odprev.left){
+            if(odstates.left){
+                msg = "$OBSTACLE_LEFT=1^";
+            }else{
+                msg = "$OBSTACLE_LEFT=0^";
+            }
+            len = strlen(msg);
+            for(i = 0; i < len; i++){
+                pc.putc(msg[i]);
+            }
+        }
+        odprev.right = odstates.right;
+        odprev.center = odstates.center;
+        odprev.left = odstates.left;
+
         strcpy (previousCmd, command);
     }//while
 }//main
